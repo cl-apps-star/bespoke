@@ -1,0 +1,189 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Postgres to match Railway (same pattern as Care / Reveal / In the
+// Making) — reads DATABASE_URL from the environment, so nothing here
+// needs to change between local and production.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// One row per shop. Holds the branding the customer-facing Bespoke pages
+// and emails inherit — same shape as Care/In the Making's MerchantProfile,
+// kept as its own copy per app until the shared Atelier Core branding
+// layer exists (per the suite's modular-apps decision).
+model MerchantProfile {
+  id           String   @id @default(cuid())
+  shop         String   @unique
+  brandName    String?
+  logoUrl      String?
+  primaryColor String?  @default("#1a1a1a")
+  accentColor  String?  @default("#8a7758")
+  supportEmail String?
+  // Public enquiry form intro copy — shown at /enquire/:shop
+  enquiryIntro String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  commissions Commission[]
+}
+
+// A single custom commission, from enquiry through locked specification —
+// covers the full Bespoke MVP customer journey (enquiry -> qualification ->
+// proposal/quote -> deposit -> proof/revision -> change requests -> locked).
+// Not tied to a shared "Object" record (Atelier Core doesn't exist as real
+// shared infra across apps yet) — Bespoke is fully standalone, same
+// decision already made for Care.
+model Commission {
+  id    String @id @default(cuid())
+  token String @unique @default(cuid()) // public project-page token, /bespoke/:token
+
+  merchant   MerchantProfile @relation(fields: [merchantId], references: [id])
+  merchantId String
+
+  customerName  String
+  customerEmail String
+
+  // ---- Enquiry (submitted by the customer at /enquire/:shop) ----
+  title            String // short project title, e.g. "Custom engagement ring"
+  description      String?
+  budget           String?
+  deadline         DateTime?
+  dimensions       String?
+  materials        String?
+  quantity         Int?    @default(1)
+  engravingText    String?
+  deliveryLocation String?
+  referenceFiles   String? // JSON array of {url, label}
+
+  status String @default("enquiry_received")
+  // enquiry_received | under_review | declined | proposal_sent |
+  // terms_accepted | deposit_paid | in_progress | final_approved | locked
+
+  priority       String? // low | normal | high
+  assignedTo     String?
+  internalNotes  String?
+
+  // ---- Proposal / quote (built by the merchant) ----
+  proposalTitle      String?
+  proposalSummary     String?
+  proposedProduct     String?
+  proposalMaterials   String?
+  proposalDimensions  String?
+  includedRevisions   Int?     @default(2)
+  exclusions          String?
+  estimatedSchedule   String?
+  price               Float?
+  currency            String   @default("GBP")
+  depositType         String? // fixed | percentage | full
+  depositValue        Float? // amount (fixed) or percent (percentage), input by merchant
+  depositAmount       Float? // computed actual deposit amount
+  balanceAmount        Float? // computed remaining balance
+  paymentScheduleNote String?
+  terms               String?
+  proposalImages      String? // JSON array of {url, label}
+  proposalVersion     Int      @default(0)
+  proposalSentAt      DateTime?
+
+  // ---- Quote approval (customer, at /bespoke/:token) ----
+  termsAcceptedAt DateTime?
+  quoteDeclinedAt DateTime?
+
+  // ---- Deposit / balance payment (real Shopify draft orders) ----
+  depositStatus       String  @default("unpaid") // unpaid | paid | not_required
+  depositDraftOrderId String?
+  depositInvoiceUrl   String?
+  balanceStatus        String  @default("not_due") // not_due | due | paid
+  balanceDraftOrderId  String?
+  balanceInvoiceUrl    String?
+
+  // ---- Proof & revisions ----
+  revisionCount   Int       @default(0)
+  maxRevisions    Int?
+  finalApprovedAt DateTime?
+  lockedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  files   CommissionFile[]
+  updates CommissionUpdate[]
+  changes ChangeRequest[]
+}
+
+// Reference images (from the enquiry), proposal/inspiration images, and
+// proof/revision uploads. Stored as plain URLs for the MVP (no in-app
+// upload pipeline yet, same simplification Care shipped with) — the
+// merchant or customer pastes a hosted image URL (e.g. from Shopify
+// Files) rather than uploading a raw file through this app.
+model CommissionFile {
+  id             String   @id @default(cuid())
+  commission     Commission @relation(fields: [commissionId], references: [id])
+  commissionId   String
+  type           String // reference | inspiration | proof | final
+  url            String
+  label          String?
+  version        Int      @default(1)
+  uploadedBy     String // merchant | customer
+  approvalStatus String? // pending | approved | revision_requested
+  approvalNote   String?
+  createdAt      DateTime @default(now())
+}
+
+// Timeline entries for a commission — merchant stage changes, customer
+// actions, internal notes. Same pattern as Care's CareUpdate / In the
+// Making's ProductionUpdate.
+model CommissionUpdate {
+  id                String     @id @default(cuid())
+  commission        Commission @relation(fields: [commissionId], references: [id])
+  commissionId      String
+  status            String? // set when this update represents a stage change
+  note              String?
+  media             String? // JSON array of media URLs
+  visibleToCustomer Boolean    @default(true)
+  customerNotified  Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+}
+
+// A proposed change to scope, material, deadline, or an extra revision —
+// raised by either side after the proposal has been accepted. Merchant
+// resolves by accepting (optionally with an additional charge) or
+// rejecting.
+model ChangeRequest {
+  id                     String     @id @default(cuid())
+  commission             Commission @relation(fields: [commissionId], references: [id])
+  commissionId           String
+  requestedBy            String // customer | merchant
+  type                   String // spec_change | added_feature | material_change | deadline_change | additional_revision
+  description            String
+  status                 String     @default("pending") // pending | accepted | rejected
+  additionalCharge       Float?
+  deadlineAdjustmentDays Int?
+  createdAt              DateTime   @default(now())
+  resolvedAt             DateTime?
+}

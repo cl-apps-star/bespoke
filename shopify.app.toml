@@ -1,0 +1,48 @@
+# This file stores configurations for your Shopify app.
+# client_id gets filled in automatically the first time Candice runs
+# `shopify app config link` against the app registered in the Partner
+# Dashboard — same as every other app in the suite.
+name = "bespoke"
+client_id = ""
+application_url = ""
+embedded = true
+
+[access_scopes]
+# read_products so a proposal can reference a real product; read_orders so
+# a locked commission can eventually be cross-referenced with the order it
+# produces; write_draft_orders so deposit/balance payments can create real
+# Shopify draft orders (same pattern as Care's payment flow).
+scopes = "read_products,read_orders,write_draft_orders"
+
+[auth]
+redirect_urls = []
+
+[webhooks]
+api_version = "2025-10"
+
+  # Handled by: /app/routes/webhooks.app.uninstalled.jsx
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = ["app/uninstalled"]
+
+  # Handled by: /app/routes/webhooks.app.scopes_update.jsx
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  # Mandatory compliance topics — required for Shopify App Store approval
+  # on any public app that touches customer data.
+  # Handled by: /app/routes/webhooks.customers.data_request.jsx
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/data_request"
+  compliance_topics = ["customers/data_request"]
+
+  # Handled by: /app/routes/webhooks.customers.redact.jsx
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/redact"
+  compliance_topics = ["customers/redact"]
+
+  # Handled by: /app/routes/webhooks.shop.redact.jsx
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/shop/redact"
+  compliance_topics = ["shop/redact"]

@@ -1,0 +1,67 @@
+.index {
+  align-items: center;
+  background: linear-gradient(#fafafa 0%, #f4f4f4 100%);
+  display: flex;
+  font-family: Georgia, "Times New Roman", serif;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0 1rem;
+}
+
+.content {
+  margin: 10vh auto;
+  max-width: 40em;
+}
+
+.heading {
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.text {
+  color: #4a4a4a;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.form {
+  align-items: start;
+  display: flex;
+  flex-direction: column;
+  margin: 2rem 0;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.input {
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.button {
+  background: #8a7758;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.6rem 1.4rem;
+}
+
+.list {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  list-style: none;
+  padding: 0;
+}
+
+.list li {
+  margin-bottom: 0.75rem;
+}
