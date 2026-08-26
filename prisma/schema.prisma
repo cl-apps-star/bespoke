@@ -79,7 +79,16 @@ model Commission {
   quantity         Int?    @default(1)
   engravingText    String?
   deliveryLocation String?
-  referenceFiles   String? // JSON array of {url, label}
+  referenceFiles   String? // deprecated — reference images now live as CommissionFile rows (type "reference")
+
+  // Category-driven intake — lets the public enquiry form ask different
+  // follow-up questions per commission type (ring size for jewelry, room
+  // dimensions for furniture, etc.) instead of one flat field set.
+  category     String? // ring | necklace | earrings | bracelet | sculpture | painting | furniture | textile | other
+  sizeOrFit    String? // category-specific sizing, e.g. ring size N, dress size 12 — kept separate from `dimensions` above
+  occasion     String? // wedding | engagement | anniversary | birthday | just_because | other
+  occasionDate DateTime?
+  styleTags    String? // JSON array of strings, e.g. ["minimalist","vintage"]
 
   status String @default("enquiry_received")
   // enquiry_received | under_review | declined | proposal_sent |
@@ -136,11 +145,12 @@ model Commission {
   changes ChangeRequest[]
 }
 
-// Reference images (from the enquiry), proposal/inspiration images, and
-// proof/revision uploads. Stored as plain URLs for the MVP (no in-app
-// upload pipeline yet, same simplification Care shipped with) — the
-// merchant or customer pastes a hosted image URL (e.g. from Shopify
-// Files) rather than uploading a raw file through this app.
+// Reference images (from the enquiry), proposal/inspiration images (from
+// the merchant's proposal), and proof/revision uploads. `url` holds a real
+// uploaded image as a base64 data: URI (same pattern as COA Kit/Reveal's
+// logo uploads — Railway wipes local disk on every redeploy, so uploads
+// go straight into the Postgres row, not the filesystem) for reference
+// and inspiration images; proof uploads still take a pasted URL for now.
 model CommissionFile {
   id             String   @id @default(cuid())
   commission     Commission @relation(fields: [commissionId], references: [id])
