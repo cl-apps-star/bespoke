@@ -392,7 +392,7 @@ export default function BespokeProjectPage() {
             ))}
         </div>
 
-        {!isPaidPlan(merchant) ? (
+        {!isPaidPlan(brand) ? (
           <div className="powered">
             <span className="metatxt">Powered by CL Apps</span>
           </div>
