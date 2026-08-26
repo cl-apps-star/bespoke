@@ -30,6 +30,13 @@ api_version = "2025-10"
   topics = [ "app/scopes_update" ]
   uri = "/webhooks/app/scopes_update"
 
+  # Keeps stored plan state in sync with Shopify's own billing records —
+  # added 2026-08-26 alongside the Studio/Atelier billing build.
+  # Handled by: /app/routes/webhooks.app_subscriptions.update.jsx
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app_subscriptions/update"
+  topics = ["app_subscriptions/update"]
+
   # Mandatory compliance topics — required for Shopify App Store approval
   # on any public app that touches customer data.
   # Handled by: /app/routes/webhooks.customers.data_request.jsx
