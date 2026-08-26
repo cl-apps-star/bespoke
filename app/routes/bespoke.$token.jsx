@@ -11,6 +11,7 @@ import {
 import { createPayableOrderForCommission } from "../bespoke-payment.server";
 import { STAGES, stageIndex, stageLabel, changeRequestTypeLabel } from "../bespoke-stages";
 import { sendDepositLinkEmail, sendStageUpdateEmail } from "../email.server";
+import { isPaidPlan } from "../planLogic";
 
 // Public, unauthenticated route — the token is the access control, same
 // pattern as Care's /care/:token and In the Making's /journey/:token.
@@ -175,6 +176,7 @@ export default function BespokeProjectPage() {
     .bp-update .status{font-family:var(--sans);font-size:12px;font-weight:bold;color:var(--ink);margin-bottom:3px;}
     .bp-update .note{font-size:15px;color:#3a3a36;}
     .bp-declined{max-width:440px;margin:44px auto 0;text-align:center;font-size:15px;line-height:1.7;color:#5a564d;}
+    .bp .powered{text-align:center;margin-top:44px;}
     @keyframes bpplace{from{opacity:0;transform:translateY(24px) scale(.985);}to{opacity:1;transform:none;}}
     @keyframes bpbreathe{0%,100%{opacity:.45;}50%{opacity:1;}}
   `;
@@ -389,6 +391,12 @@ export default function BespokeProjectPage() {
               </div>
             ))}
         </div>
+
+        {!isPaidPlan(merchant) ? (
+          <div className="powered">
+            <span className="metatxt">Powered by CL Apps</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );

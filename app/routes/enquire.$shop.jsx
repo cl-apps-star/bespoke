@@ -2,6 +2,8 @@ import { redirect, useLoaderData, useActionData, Form, useNavigation } from "rea
 import { getMerchantProfileByShop, createEnquiry } from "../bespoke.server";
 import { saveUploadedImages } from "../imageUpload.server";
 import { sendEnquiryReceivedEmail } from "../email.server";
+import { reserveCommissionSlot } from "../plan.server";
+import { isPaidPlan } from "../planLogic";
 
 // Public, unauthenticated route — the entry point for the commission form
 // builder described in the Bespoke spec. A merchant links to
@@ -28,6 +30,14 @@ export const loader = async ({ params }) => {
 export const action = async ({ request, params }) => {
   const merchant = await getMerchantProfileByShop(params.shop);
   if (!merchant) throw new Response("Not found", { status: 404 });
+
+  // Enforce the monthly commission cap (free/Studio) before doing anything
+  // else — no point saving uploaded images for an enquiry that's over the
+  // limit. Atelier always passes through untouched. See plan.server.js.
+  const slot = await reserveCommissionSlot(params.shop, merchant);
+  if (!slot.allowed) {
+    return { error: slot.reason };
+  }
 
   const formData = await request.formData();
 
@@ -156,6 +166,7 @@ export default function EnquireForm() {
       letter-spacing:2.5px;text-transform:uppercase;color:#fff;background:var(--accent);
       border:none;padding:17px 26px;cursor:pointer;}
     .bq-submit:disabled{opacity:.6;cursor:default;}
+    .bq .powered{text-align:center;margin-top:44px;}
     @keyframes bqplace{from{opacity:0;transform:translateY(22px) scale(.985);}to{opacity:1;transform:none;}}
   `;
 
@@ -303,6 +314,12 @@ export default function EnquireForm() {
             {submitting ? "Submitting…" : "Submit enquiry"}
           </button>
         </Form>
+
+        {!isPaidPlan(merchant) ? (
+          <div className="powered">
+            <span className="metatxt">Powered by CL Apps</span>
+          </div>
+        ) : null}
 
         {/* Progressive enhancement only — every field above works fine (just
             all visible at once) if this script fails to run. */}
