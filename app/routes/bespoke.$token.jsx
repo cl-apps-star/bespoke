@@ -131,12 +131,22 @@ export default function BespokeProjectPage() {
   const pendingProof = commission.files.find(
     (f) => f.type === "proof" && f.approvalStatus === "pending",
   );
+  const referenceImages = commission.files.filter((f) => f.type === "reference");
+  const inspirationImages = commission.files.filter((f) => f.type === "inspiration");
+  const thumb = { width: 88, height: 88, objectFit: "cover", borderRadius: 4, marginRight: 10, marginTop: 10 };
 
   return (
     <div style={styles.wrap}>
       <div style={styles.brand}>{brand?.brandName || "Bespoke"}</div>
       <h1 style={{ fontWeight: "normal" }}>{commission.proposalTitle || commission.title}</h1>
       <p style={{ color: "#555" }}>Commission for {commission.customerName}</p>
+      {referenceImages.length > 0 && (
+        <div>
+          {referenceImages.map((f) => (
+            <img key={f.id} src={f.url} alt={f.label || "Reference"} style={thumb} />
+          ))}
+        </div>
+      )}
 
       <div style={styles.stageRow}>
         {STAGES.map((s, i) => (
@@ -177,6 +187,13 @@ export default function BespokeProjectPage() {
             </p>
           )}
           {commission.terms && <p style={{ fontSize: 13, color: "#777" }}>{commission.terms}</p>}
+          {inspirationImages.length > 0 && (
+            <div>
+              {inspirationImages.map((f) => (
+                <img key={f.id} src={f.url} alt={f.label || "Concept"} style={thumb} />
+              ))}
+            </div>
+          )}
           <div>
             <button style={styles.button} onClick={() => fetcher.submit({ intent: "accept_terms" }, { method: "POST" })}>
               Accept terms & pay deposit

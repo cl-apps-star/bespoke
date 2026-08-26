@@ -14,8 +14,30 @@ import {
   resolveChangeRequest,
   lockSpecification,
 } from "../bespoke.server";
+import { saveUploadedImages } from "../imageUpload.server";
 import { createPayableOrderForCommission, manuallyMarkDepositPaid, manuallyMarkBalancePaid } from "../bespoke-payment.server";
 import { STAGES, stageLabel, changeRequestTypeLabel } from "../bespoke-stages";
+
+const CATEGORY_LABELS = {
+  ring: "Ring",
+  necklace_pendant: "Necklace / pendant",
+  earrings: "Earrings",
+  bracelet: "Bracelet",
+  sculpture_art: "Sculpture / art object",
+  painting_drawing: "Painting / drawing",
+  furniture: "Furniture",
+  textile_apparel: "Textile / apparel",
+  other: "Something else",
+};
+
+const OCCASION_LABELS = {
+  wedding: "Wedding",
+  engagement: "Engagement",
+  anniversary: "Anniversary",
+  birthday: "Birthday",
+  just_because: "Just because",
+  other: "Other",
+};
 import {
   sendProposalEmail,
   sendDepositLinkEmail,
@@ -64,6 +86,12 @@ export const action = async ({ request, params }) => {
   }
 
   if (intent === "save_and_send_proposal") {
+    let proposalImages = [];
+    try {
+      proposalImages = await saveUploadedImages(formData.getAll("proposalImages"), { labelPrefix: "Concept" });
+    } catch (err) {
+      return { ok: false, error: err.userFacing ? err.message : "Something went wrong with one of the images." };
+    }
     const updated = await saveAndSendProposal(commission.id, {
       proposalTitle: formData.get("proposalTitle"),
       proposalSummary: formData.get("proposalSummary"),
@@ -79,6 +107,7 @@ export const action = async ({ request, params }) => {
       depositValue: formData.get("depositValue"),
       paymentScheduleNote: formData.get("paymentScheduleNote"),
       terms: formData.get("terms"),
+      proposalImages,
     });
     await sendProposalEmail({ commission: updated, merchant, projectUrl });
     return { ok: true };
@@ -168,13 +197,36 @@ export default function CommissionDetail() {
             Customer: {commission.customerName} ({commission.customerEmail})
           </s-text>
           <s-text>Status: {stageLabel(commission.status)}</s-text>
+          {commission.category && <s-text>Category: {CATEGORY_LABELS[commission.category] || commission.category}</s-text>}
+          {commission.occasion && (
+            <s-text>
+              Occasion: {OCCASION_LABELS[commission.occasion] || commission.occasion}
+              {commission.occasionDate ? ` — ${new Date(commission.occasionDate).toLocaleDateString()}` : ""}
+            </s-text>
+          )}
+          {commission.styleTags && (
+            <s-text>Style: {JSON.parse(commission.styleTags).join(", ")}</s-text>
+          )}
           {commission.budget && <s-text>Budget: {commission.budget}</s-text>}
           {commission.materials && <s-text>Materials requested: {commission.materials}</s-text>}
+          {commission.sizeOrFit && <s-text>Size / fit: {commission.sizeOrFit}</s-text>}
           {commission.dimensions && <s-text>Dimensions: {commission.dimensions}</s-text>}
           {commission.engravingText && <s-text>Engraving: {commission.engravingText}</s-text>}
           {commission.quantity != null && <s-text>Quantity: {commission.quantity}</s-text>}
           {commission.description && <s-text>Description: {commission.description}</s-text>}
         </s-stack>
+        {commission.files.filter((f) => f.type === "reference").length > 0 && (
+          <s-stack direction="block" gap="tight">
+            <s-text weight="bold">Reference images from customer</s-text>
+            <s-stack direction="inline" gap="tight">
+              {commission.files
+                .filter((f) => f.type === "reference")
+                .map((f) => (
+                  <img key={f.id} src={f.url} alt={f.label || "Reference"} style={{ width: 96, height: 96, objectFit: "cover", borderRadius: 4 }} />
+                ))}
+            </s-stack>
+          </s-stack>
+        )}
       </s-section>
 
       {commission.status === "enquiry_received" && (
@@ -226,9 +278,25 @@ export default function CommissionDetail() {
               />
               <s-text-field name="paymentScheduleNote" label="Payment schedule note" defaultValue={commission.paymentScheduleNote ?? ""} />
               <s-text-field name="terms" label="Terms" defaultValue={commission.terms ?? ""} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontSize: 13, color: "#555" }}>Concept / inspiration images (optional)</label>
+                <input type="file" name="proposalImages" accept="image/png,image/jpeg,image/webp,image/gif" multiple />
+                <span style={{ fontSize: 12, color: "#999" }}>
+                  Uploading a new set replaces the images attached to the current proposal.
+                </span>
+              </div>
               <s-button type="submit">Save & send proposal</s-button>
             </s-stack>
           </form>
+          {commission.files.filter((f) => f.type === "inspiration").length > 0 && (
+            <s-stack direction="inline" gap="tight">
+              {commission.files
+                .filter((f) => f.type === "inspiration")
+                .map((f) => (
+                  <img key={f.id} src={f.url} alt={f.label || "Concept"} style={{ width: 96, height: 96, objectFit: "cover", borderRadius: 4 }} />
+                ))}
+            </s-stack>
+          )}
           {commission.price != null && (
             <s-paragraph>
               Current: {commission.currency} {commission.price.toFixed(2)} total · deposit{" "}
