@@ -2,10 +2,23 @@ import "@shopify/shopify-app-react-router/adapters/node";
 import {
   ApiVersion,
   AppDistribution,
+  BillingInterval,
   shopifyApp,
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
+import {
+  STUDIO_PLAN,
+  ATELIER_PLAN,
+  STUDIO_PLAN_PRICE,
+  ATELIER_PLAN_PRICE,
+} from "./planConstants";
+
+// Re-exported for back-compat with any file still importing these from
+// here — new code should import from ./planConstants directly, since this
+// file is server-only and anything imported from it outside a route's
+// loader/action gets flagged by React Router's client bundle check.
+export { STUDIO_PLAN, ATELIER_PLAN };
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -18,6 +31,29 @@ const shopify = shopifyApp({
   distribution: AppDistribution.AppStore,
   future: {
     expiringOfflineAccessTokens: true,
+  },
+  billing: {
+    // No trialDays — the 3 free commissions a month already serve as the
+    // trial, same reasoning as Reveal's Studio/Atelier and In the Making's
+    // Starter/Growth.
+    [STUDIO_PLAN]: {
+      lineItems: [
+        {
+          amount: STUDIO_PLAN_PRICE,
+          currencyCode: "USD",
+          interval: BillingInterval.Every30Days,
+        },
+      ],
+    },
+    [ATELIER_PLAN]: {
+      lineItems: [
+        {
+          amount: ATELIER_PLAN_PRICE,
+          currencyCode: "USD",
+          interval: BillingInterval.Every30Days,
+        },
+      ],
+    },
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
