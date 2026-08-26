@@ -43,12 +43,25 @@ model MerchantProfile {
   brandName    String?
   logoUrl      String?
   primaryColor String?  @default("#1a1a1a")
-  accentColor  String?  @default("#8a7758")
+  // Was "#8a7758" (Care's old accent) — corrected to the suite's actual
+  // shared default (COA Kit / In the Making) as part of the 2026-08-26
+  // design-consistency pass. Only affects merchants who never set their
+  // own accent colour.
+  accentColor  String?  @default("#96773f")
   supportEmail String?
   // Public enquiry form intro copy — shown at /enquire/:shop
   enquiryIntro String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  // Billing — free / studio / atelier. Mirrors In the Making's
+  // MakerProfile billing fields exactly (same Shopify Billing API pattern,
+  // same monthly-count-with-lazy-reset mechanics). See plan.server.js.
+  plan                   String?
+  planStatus             String?
+  shopifyChargeId        String?
+  commissionCountPeriod  Int       @default(0)
+  commissionPeriodStart  DateTime?
 
   commissions Commission[]
 }
