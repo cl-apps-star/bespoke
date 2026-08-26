@@ -39,10 +39,30 @@ export async function createEnquiry(merchantId, input) {
       quantity: input.quantity ? Number(input.quantity) : 1,
       engravingText: input.engravingText ?? null,
       deliveryLocation: input.deliveryLocation ?? null,
-      referenceFiles: input.referenceFiles ? JSON.stringify(input.referenceFiles) : null,
+      category: input.category ?? null,
+      sizeOrFit: input.sizeOrFit ?? null,
+      occasion: input.occasion ?? null,
+      occasionDate: input.occasionDate ? new Date(input.occasionDate) : null,
+      styleTags: input.styleTags && input.styleTags.length ? JSON.stringify(input.styleTags) : null,
       status: "enquiry_received",
     },
   });
+
+  // Reference/inspiration images the customer attached, already converted
+  // to base64 data: URIs by app/imageUpload.server.js — stored as real
+  // CommissionFile rows (type "reference") rather than a JSON blob on the
+  // commission itself, same table proof/inspiration uploads use.
+  if (input.referenceImages && input.referenceImages.length) {
+    await prisma.commissionFile.createMany({
+      data: input.referenceImages.map(({ dataUri, label }) => ({
+        commissionId: commission.id,
+        type: "reference",
+        url: dataUri,
+        label,
+        uploadedBy: "customer",
+      })),
+    });
+  }
 
   await prisma.commissionUpdate.create({
     data: {
@@ -180,13 +200,28 @@ export async function saveAndSendProposal(commissionId, input) {
       balanceAmount,
       paymentScheduleNote: input.paymentScheduleNote ?? null,
       terms: input.terms ?? null,
-      proposalImages: input.proposalImages ? JSON.stringify(input.proposalImages) : null,
       proposalVersion: (current?.proposalVersion ?? 0) + 1,
       proposalSentAt: new Date(),
       status: "proposal_sent",
       maxRevisions: input.includedRevisions != null ? Number(input.includedRevisions) : current?.maxRevisions,
     },
   });
+
+  // Concept/inspiration images the merchant attached to this version of
+  // the proposal — replace whatever was attached to the previous version
+  // rather than piling up duplicates every time the proposal is re-saved.
+  if (input.proposalImages && input.proposalImages.length) {
+    await prisma.commissionFile.deleteMany({ where: { commissionId, type: "inspiration" } });
+    await prisma.commissionFile.createMany({
+      data: input.proposalImages.map(({ dataUri, label }) => ({
+        commissionId,
+        type: "inspiration",
+        url: dataUri,
+        label,
+        uploadedBy: "merchant",
+      })),
+    });
+  }
 
   await addUpdate(commissionId, {
     status: "proposal_sent",
