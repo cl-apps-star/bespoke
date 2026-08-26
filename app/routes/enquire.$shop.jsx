@@ -12,6 +12,13 @@ import { sendEnquiryReceivedEmail } from "../email.server";
 // budget, deadline, quantity, engraving, delivery location. A true
 // drag-and-drop field builder is still a "later" feature — this is the
 // richer fixed field set the MVP spec calls for, not a builder.
+//
+// Visual language (2026-08-26): rebuilt onto the same design system as
+// Digital Unboxing & COA Kit and In the Making's customer-facing pages —
+// same CSS custom properties, same font stack, same eyebrow/rule/quiet-
+// editorial motifs — instead of Bespoke's original one-off styling. See
+// "Design consistency across the suite" project doc for the reference
+// values this was built against.
 export const loader = async ({ params }) => {
   const merchant = await getMerchantProfileByShop(params.shop);
   if (!merchant) throw new Response("This studio hasn't set up Bespoke yet.", { status: 404 });
@@ -92,208 +99,242 @@ export default function EnquireForm() {
   const actionData = useActionData();
   const navigation = useNavigation();
   const submitting = navigation.state === "submitting";
-  const accent = merchant.accentColor || "#8a7758";
+  const accent = merchant.accentColor || "#96773f";
 
-  const styles = {
-    wrap: {
-      fontFamily: "Georgia, 'Times New Roman', serif",
-      maxWidth: 640,
-      margin: "0 auto",
-      padding: "48px 24px",
-      color: "#1a1a1a",
-    },
-    brand: {
-      fontSize: 13,
-      letterSpacing: "0.08em",
-      textTransform: "uppercase",
-      color: accent,
-      marginBottom: 24,
-    },
-    sectionLabel: {
-      fontSize: 13,
-      letterSpacing: "0.04em",
-      textTransform: "uppercase",
-      color: "#999",
-      margin: "36px 0 4px",
-    },
-    field: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 },
-    label: { fontSize: 14, color: "#555" },
-    hint: { fontSize: 12, color: "#999" },
-    input: {
-      padding: "10px 12px",
-      border: "1px solid #ddd",
-      fontFamily: "inherit",
-      fontSize: 15,
-      background: "#fff",
-    },
-    tagRow: { display: "flex", flexWrap: "wrap", gap: "8px 16px" },
-    tagLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "#333" },
-    error: {
-      padding: "12px 16px",
-      background: "#fbeaea",
-      border: "1px solid #e3b7b7",
-      color: "#8a2c2c",
-      fontSize: 14,
-      marginBottom: 20,
-    },
-    button: {
-      padding: "12px 28px",
-      background: accent,
-      color: "#fff",
-      border: "none",
-      cursor: "pointer",
-      fontSize: 15,
-      marginTop: 12,
-    },
-  };
+  // Same custom-property / class-based system as certificate.$token.jsx
+  // (Digital Unboxing & COA Kit) and journey.$token.jsx (In the Making) —
+  // --paper/--ink/--muted/--accent, the Iowan Old Style/Georgia serif +
+  // Helvetica sans split, and the eyebrow/rule/quiet-card visual language.
+  // Extended here with input/select/checkbox treatments (a form page,
+  // unlike the other two apps' read-only pages) that follow the same
+  // typographic rules: serif for headings only, sans for every label,
+  // hint, and control.
+  const css = `
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    .bq{--paper:#FAF6EE;--ink:#1c1b19;--muted:#8a8478;--accent:${accent};
+      --line:color-mix(in srgb, ${accent} 26%, transparent);
+      --matline:color-mix(in srgb, ${accent} 50%, transparent);
+      --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+      --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+      position:relative;min-height:100vh;background:var(--paper);color:var(--ink);
+      font-family:var(--serif);overflow-x:hidden;padding:0 22px 96px;}
+    .bq-vignette{position:fixed;inset:0;pointer-events:none;z-index:0;
+      background:radial-gradient(120% 80% at 50% 34%, rgba(255,255,255,.5), rgba(150,119,63,.05) 70%, rgba(28,27,25,.10));}
+    .bq .wrap{max-width:620px;margin:0 auto;position:relative;z-index:2;}
+    .bq .eyebrow{font-family:var(--sans);font-size:11px;letter-spacing:3.5px;color:var(--accent);text-transform:uppercase;}
+    .bq .wordmark{font-family:var(--sans);font-size:12px;letter-spacing:5px;color:var(--muted);text-transform:uppercase;}
+    .bq .metatxt{font-family:var(--sans);font-size:10px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;}
+    .bq .rule{width:34px;height:1px;background:var(--accent);opacity:.6;margin:0 auto;}
+    .bq .top{display:flex;justify-content:center;padding:44px 0 30px;}
+    .bq .logo{max-height:40px;max-width:200px;display:block;}
+    .bq .hero{text-align:center;padding:6px 0 34px;animation:bqplace 1s cubic-bezier(.2,.7,.2,1) both;}
+    .bq .hero .eyebrow{margin-bottom:26px;}
+    .bq .greet{font-style:italic;font-size:clamp(28px,6.4vw,40px);line-height:1.16;margin-bottom:14px;}
+    .bq .sub{font-size:clamp(14.5px,3.4vw,16.5px);color:#5a564d;line-height:1.65;max-width:38ch;margin:0 auto;}
+    .bq-section{margin:44px auto 0;max-width:100%;animation:bqplace 1s ease .1s both;}
+    .bq-section-title{text-align:center;margin-bottom:26px;}
+    .bq-section-title .rule{margin-bottom:14px;}
+    .bq-field{margin-bottom:22px;}
+    .bq-field label{display:block;font-family:var(--sans);font-size:12px;letter-spacing:.3px;color:#5a564d;margin-bottom:8px;}
+    .bq-hint{display:block;font-family:var(--sans);font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;}
+    .bq-input,.bq-select,.bq-textarea{
+      width:100%;font-family:var(--serif);font-size:15.5px;color:var(--ink);
+      background:#fffefb;border:1px solid var(--matline);padding:12px 14px;
+      appearance:none;-webkit-appearance:none;}
+    .bq-select{background-image:linear-gradient(45deg, transparent 50%, ${accent} 50%),linear-gradient(135deg, ${accent} 50%, transparent 50%);
+      background-position:calc(100% - 20px) center, calc(100% - 15px) center;background-size:5px 5px, 5px 5px;background-repeat:no-repeat;}
+    .bq-textarea{min-height:110px;resize:vertical;}
+    .bq-input:focus,.bq-select:focus,.bq-textarea:focus{outline:none;border-color:var(--accent);}
+    .bq-input::placeholder,.bq-textarea::placeholder{color:#a39d90;}
+    .bq-tags{display:flex;flex-wrap:wrap;gap:9px 14px;}
+    .bq-tag{display:flex;align-items:center;gap:7px;font-family:var(--sans);font-size:12.5px;color:#4c483f;}
+    .bq-tag input{accent-color:var(--accent);width:14px;height:14px;}
+    .bq-file{font-family:var(--sans);font-size:12.5px;color:#4c483f;}
+    .bq-error{font-family:var(--sans);font-size:13px;line-height:1.6;color:#8a4a3a;
+      background:#fbf1ec;border:1px solid #e5c9ba;padding:16px 18px;margin-bottom:32px;}
+    .bq-submit{display:block;width:100%;margin-top:14px;font-family:var(--sans);font-size:12px;
+      letter-spacing:2.5px;text-transform:uppercase;color:#fff;background:var(--accent);
+      border:none;padding:17px 26px;cursor:pointer;}
+    .bq-submit:disabled{opacity:.6;cursor:default;}
+    @keyframes bqplace{from{opacity:0;transform:translateY(22px) scale(.985);}to{opacity:1;transform:none;}}
+  `;
 
   return (
-    <div style={styles.wrap}>
-      <div style={styles.brand}>{merchant.brandName || "Custom commissions"}</div>
-      <h1 style={{ fontWeight: "normal" }}>Start a commission</h1>
-      {merchant.enquiryIntro && <p style={{ color: "#555" }}>{merchant.enquiryIntro}</p>}
+    <div className="bq">
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <div className="bq-vignette" />
 
-      {actionData?.error && <div style={styles.error}>{actionData.error}</div>}
-
-      <Form method="post" encType="multipart/form-data">
-        <div style={styles.field}>
-          <label style={styles.label}>Your name</label>
-          <input style={styles.input} name="customerName" required />
-        </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Your email</label>
-          <input style={styles.input} type="email" name="customerEmail" required />
+      <div className="wrap">
+        <div className="top">
+          {merchant.logoUrl ? (
+            <img className="logo" src={merchant.logoUrl} alt={merchant.brandName || "Studio"} />
+          ) : (
+            <div className="wordmark">{merchant.brandName || "Custom commissions"}</div>
+          )}
         </div>
 
-        <div style={styles.sectionLabel}>The piece</div>
-        <div style={styles.field}>
-          <label style={styles.label}>What are you looking to commission?</label>
-          <select id="category" style={styles.input} name="category" defaultValue="">
-            <option value="" disabled>
-              Choose a category
-            </option>
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+        <div className="hero">
+          <div className="eyebrow">Start a commission</div>
+          <h1 className="greet">Tell us what you'd like made.</h1>
+          {merchant.enquiryIntro && <p className="sub">{merchant.enquiryIntro}</p>}
         </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Project title</label>
-          <input style={styles.input} name="title" placeholder="e.g. Custom engagement ring" required />
-        </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Tell us about what you'd like made</label>
-          <textarea style={{ ...styles.input, minHeight: 100 }} name="description" />
-        </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Style (optional — pick any that fit)</label>
-          <div style={styles.tagRow}>
-            {STYLE_TAGS.map((tag) => (
-              <label key={tag} style={styles.tagLabel}>
-                <input type="checkbox" name="styleTags" value={tag} />
-                {tag}
-              </label>
-            ))}
+
+        {actionData?.error && <div className="bq-error">{actionData.error}</div>}
+
+        <Form method="post" encType="multipart/form-data">
+          <div className="bq-section">
+            <div className="bq-field">
+              <label>Your name</label>
+              <input className="bq-input" name="customerName" required />
+            </div>
+            <div className="bq-field">
+              <label>Your email</label>
+              <input className="bq-input" type="email" name="customerEmail" required />
+            </div>
           </div>
-        </div>
 
-        <div id="sizeOrFitField" style={{ ...styles.field, display: "none" }}>
-          <label style={styles.label}>Size / fit</label>
-          <input style={styles.input} name="sizeOrFit" placeholder="e.g. Ring size N, dress size 12" />
-        </div>
-        <div id="dimensionsField" style={{ ...styles.field, display: "none" }}>
-          <label style={styles.label}>Dimensions</label>
-          <input style={styles.input} name="dimensions" placeholder="e.g. 120cm x 60cm x 75cm" />
-        </div>
+          <div className="bq-section">
+            <div className="bq-section-title">
+              <div className="rule" />
+              <div className="eyebrow">The piece</div>
+            </div>
+            <div className="bq-field">
+              <label>What are you looking to commission?</label>
+              <select id="category" className="bq-select" name="category" defaultValue="">
+                <option value="" disabled>Choose a category</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="bq-field">
+              <label>Project title</label>
+              <input className="bq-input" name="title" placeholder="e.g. Custom engagement ring" required />
+            </div>
+            <div className="bq-field">
+              <label>Tell us about what you'd like made</label>
+              <textarea className="bq-textarea" name="description" />
+            </div>
+            <div className="bq-field">
+              <label>Style (optional — pick any that fit)</label>
+              <div className="bq-tags">
+                {STYLE_TAGS.map((tag) => (
+                  <label key={tag} className="bq-tag">
+                    <input type="checkbox" name="styleTags" value={tag} />
+                    {tag}
+                  </label>
+                ))}
+              </div>
+            </div>
 
-        <div style={styles.field}>
-          <label style={styles.label}>Material choice</label>
-          <input style={styles.input} name="materials" />
-        </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Quantity</label>
-          <input style={styles.input} type="number" name="quantity" defaultValue={1} min={1} />
-        </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Engraving or personalised text</label>
-          <input style={styles.input} name="engravingText" />
-        </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Reference & inspiration images (optional)</label>
-          <input style={styles.input} type="file" name="referenceImages" accept="image/png,image/jpeg,image/webp,image/gif" multiple />
-          <span style={styles.hint}>Up to 6 images, JPG/PNG/WebP, 3MB each — a Pinterest screenshot or a photo of something similar is perfect.</span>
-        </div>
+            <div id="sizeOrFitField" className="bq-field" style={{ display: "none" }}>
+              <label>Size / fit</label>
+              <input className="bq-input" name="sizeOrFit" placeholder="e.g. Ring size N, dress size 12" />
+            </div>
+            <div id="dimensionsField" className="bq-field" style={{ display: "none" }}>
+              <label>Dimensions</label>
+              <input className="bq-input" name="dimensions" placeholder="e.g. 120cm x 60cm x 75cm" />
+            </div>
 
-        <div style={styles.sectionLabel}>The occasion</div>
-        <div style={styles.field}>
-          <label style={styles.label}>Is this for a special occasion?</label>
-          <select id="occasion" style={styles.input} name="occasion" defaultValue="">
-            {OCCASIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div id="occasionDateField" style={{ ...styles.field, display: "none" }}>
-          <label style={styles.label}>Occasion date</label>
-          <input style={styles.input} type="date" name="occasionDate" />
-        </div>
+            <div className="bq-field">
+              <label>Material choice</label>
+              <input className="bq-input" name="materials" />
+            </div>
+            <div className="bq-field">
+              <label>Quantity</label>
+              <input className="bq-input" type="number" name="quantity" defaultValue={1} min={1} />
+            </div>
+            <div className="bq-field">
+              <label>Engraving or personalised text</label>
+              <input className="bq-input" name="engravingText" />
+            </div>
+            <div className="bq-field">
+              <label>Reference &amp; inspiration images (optional)</label>
+              <input
+                className="bq-file"
+                type="file"
+                name="referenceImages"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                multiple
+              />
+              <span className="bq-hint">Up to 6 images, JPG/PNG/WebP, 3MB each — a Pinterest screenshot or a photo of something similar is perfect.</span>
+            </div>
+          </div>
 
-        <div style={styles.sectionLabel}>Logistics</div>
-        <div style={styles.field}>
-          <label style={styles.label}>Budget</label>
-          <input style={styles.input} name="budget" placeholder="e.g. £500 - £1,000" />
-        </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Preferred deadline</label>
-          <input style={styles.input} type="date" name="deadline" />
-        </div>
-        <div style={styles.field}>
-          <label style={styles.label}>Delivery location</label>
-          <input style={styles.input} name="deliveryLocation" />
-        </div>
+          <div className="bq-section">
+            <div className="bq-section-title">
+              <div className="rule" />
+              <div className="eyebrow">The occasion</div>
+            </div>
+            <div className="bq-field">
+              <label>Is this for a special occasion?</label>
+              <select id="occasion" className="bq-select" name="occasion" defaultValue="">
+                {OCCASIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <div id="occasionDateField" className="bq-field" style={{ display: "none" }}>
+              <label>Occasion date</label>
+              <input className="bq-input" type="date" name="occasionDate" />
+            </div>
+          </div>
 
-        <button style={styles.button} type="submit" disabled={submitting}>
-          {submitting ? "Submitting..." : "Submit enquiry"}
-        </button>
-      </Form>
+          <div className="bq-section">
+            <div className="bq-section-title">
+              <div className="rule" />
+              <div className="eyebrow">Logistics</div>
+            </div>
+            <div className="bq-field">
+              <label>Budget</label>
+              <input className="bq-input" name="budget" placeholder="e.g. £500 - £1,000" />
+            </div>
+            <div className="bq-field">
+              <label>Preferred deadline</label>
+              <input className="bq-input" type="date" name="deadline" />
+            </div>
+            <div className="bq-field">
+              <label>Delivery location</label>
+              <input className="bq-input" name="deliveryLocation" />
+            </div>
+          </div>
 
-      {/* Progressive enhancement only — every field above works fine (just
-          all visible at once) if this script fails to run. Shows the
-          category-appropriate size question and the occasion-date field
-          only when they're relevant, so the form doesn't ask a furniture
-          buyer for a ring size. */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function () {
-              var sizeCategories = ${JSON.stringify(SIZE_FIT_CATEGORIES)};
-              var dimensionCategories = ${JSON.stringify(DIMENSIONS_CATEGORIES)};
-              var categorySelect = document.getElementById("category");
-              var sizeField = document.getElementById("sizeOrFitField");
-              var dimensionsField = document.getElementById("dimensionsField");
-              function syncCategory() {
-                var v = categorySelect.value;
-                sizeField.style.display = sizeCategories.indexOf(v) !== -1 ? "flex" : "none";
-                dimensionsField.style.display = dimensionCategories.indexOf(v) !== -1 ? "flex" : "none";
-              }
-              categorySelect.addEventListener("change", syncCategory);
-              syncCategory();
+          <button className="bq-submit" type="submit" disabled={submitting}>
+            {submitting ? "Submitting…" : "Submit enquiry"}
+          </button>
+        </Form>
 
-              var occasionSelect = document.getElementById("occasion");
-              var occasionDateField = document.getElementById("occasionDateField");
-              function syncOccasion() {
-                occasionDateField.style.display = occasionSelect.value ? "flex" : "none";
-              }
-              occasionSelect.addEventListener("change", syncOccasion);
-              syncOccasion();
-            })();
-          `,
-        }}
-      />
+        {/* Progressive enhancement only — every field above works fine (just
+            all visible at once) if this script fails to run. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                var sizeCategories = ${JSON.stringify(SIZE_FIT_CATEGORIES)};
+                var dimensionCategories = ${JSON.stringify(DIMENSIONS_CATEGORIES)};
+                var categorySelect = document.getElementById("category");
+                var sizeField = document.getElementById("sizeOrFitField");
+                var dimensionsField = document.getElementById("dimensionsField");
+                function syncCategory() {
+                  var v = categorySelect.value;
+                  sizeField.style.display = sizeCategories.indexOf(v) !== -1 ? "block" : "none";
+                  dimensionsField.style.display = dimensionCategories.indexOf(v) !== -1 ? "block" : "none";
+                }
+                categorySelect.addEventListener("change", syncCategory);
+                syncCategory();
+
+                var occasionSelect = document.getElementById("occasion");
+                var occasionDateField = document.getElementById("occasionDateField");
+                function syncOccasion() {
+                  occasionDateField.style.display = occasionSelect.value ? "block" : "none";
+                }
+                occasionSelect.addEventListener("change", syncOccasion);
+                syncOccasion();
+              })();
+            `,
+          }}
+        />
+      </div>
     </div>
   );
 }
