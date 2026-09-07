@@ -1,3 +1,4 @@
+import { redactEmailRecords } from "../emailDelivery.server";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
@@ -20,6 +21,8 @@ export const action = async ({ request }) => {
     await prisma.commission.deleteMany({ where: { merchantId: merchant.id } });
     await prisma.merchantProfile.delete({ where: { id: merchant.id } });
   }
+
+  await redactEmailRecords(shop);
 
   return new Response();
 };

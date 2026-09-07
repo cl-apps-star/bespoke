@@ -109,7 +109,8 @@ export const action = async ({ request, params }) => {
       terms: formData.get("terms"),
       proposalImages,
     });
-    await sendProposalEmail({ commission: updated, merchant, projectUrl });
+    const emailResult = await sendProposalEmail({ commission: updated, merchant, projectUrl });
+    if (emailResult.skipped) return { error: `The commission was saved, but email sending is unconfirmed: ${emailResult.reason}` };
     return { ok: true };
   }
 
@@ -119,7 +120,8 @@ export const action = async ({ request, params }) => {
     } catch (err) {
       console.error("[bespoke] deposit draft order failed", err);
     }
-    await sendDepositLinkEmail({ commission, merchant, projectUrl });
+    const emailResult = await sendDepositLinkEmail({ commission, merchant, projectUrl });
+    if (emailResult.skipped) return { error: `The commission was saved, but email sending is unconfirmed: ${emailResult.reason}` };
     return { ok: true };
   }
 
@@ -140,7 +142,8 @@ export const action = async ({ request, params }) => {
       uploadedBy: "merchant",
     });
     const updated = await getCommissionById(commission.id, merchant.id);
-    await sendProofReadyEmail({ commission: updated, merchant, projectUrl });
+    const emailResult = await sendProofReadyEmail({ commission: updated, merchant, projectUrl });
+    if (emailResult.skipped) return { error: `The commission was saved, but email sending is unconfirmed: ${emailResult.reason}` };
     return { ok: true };
   }
 
@@ -163,19 +166,21 @@ export const action = async ({ request, params }) => {
       deadlineAdjustmentDays,
     });
     const updated = await getCommissionById(commission.id, merchant.id);
-    await sendChangeRequestResolvedEmail({
+    const emailResult = await sendChangeRequestResolvedEmail({
       commission: updated,
       merchant,
       projectUrl,
       accepted: accept,
       additionalCharge: additionalCharge ? Number(additionalCharge) : null,
     });
+    if (emailResult.skipped) return { error: `The commission was saved, but email sending is unconfirmed: ${emailResult.reason}` };
     return { ok: true };
   }
 
   if (intent === "lock_specification") {
     const updated = await lockSpecification(commission.id);
-    await sendLockedEmail({ commission: updated, merchant, projectUrl });
+    const emailResult = await sendLockedEmail({ commission: updated, merchant, projectUrl });
+    if (emailResult.skipped) return { error: `The commission was saved, but email sending is unconfirmed: ${emailResult.reason}` };
     return { ok: true };
   }
 
@@ -191,6 +196,7 @@ export default function CommissionDetail() {
 
   return (
     <s-page heading={commission.title} backAction={{ url: "/app" }}>
+      {fetcher.data?.error ? <s-banner tone="critical">{fetcher.data.error}</s-banner> : null}
       <s-section heading="Overview">
         <s-stack direction="block" gap="tight">
           <s-text>

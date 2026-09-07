@@ -18,7 +18,8 @@ export default function App() {
         <s-link href="/app">Commissions</s-link>
         <s-link href="/app/branding">Branding</s-link>
         <s-link href="/app/billing">Billing</s-link>
-      </s-app-nav>
+        <s-link href="/app/email-status">Email status</s-link>
+                </s-app-nav>
       <Outlet />
     </AppProvider>
   );

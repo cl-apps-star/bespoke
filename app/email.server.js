@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { sendTransactionalEmail } from "./emailProviders.server";
 import { stageLabel } from "./bespoke-stages";
 
 // Same domain / provider as the rest of the suite — keep sender addresses
@@ -9,14 +9,6 @@ import { stageLabel } from "./bespoke-stages";
 // Bespoke:       commissions@cl-apps.net
 const FROM_ADDRESS = "Bespoke <commissions@cl-apps.net>";
 
-function getResend() {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[email.server] RESEND_API_KEY not set — skipping send");
-    return null;
-  }
-  return new Resend(apiKey);
-}
 
 function brandBlock(merchant) {
   const name = merchant?.brandName || "Our studio";
@@ -36,10 +28,8 @@ function baseTemplate({ merchant, title, bodyHtml, ctaLabel, ctaUrl }) {
   </div>`;
 }
 
-async function send({ to, subject, html }) {
-  const resend = getResend();
-  if (!resend) return { skipped: true };
-  return resend.emails.send({ from: FROM_ADDRESS, to, subject, html });
+async function send({ to, subject, html, context }) {
+  return sendTransactionalEmail({ from: FROM_ADDRESS, to, subject, html, context });
 }
 
 export async function sendEnquiryReceivedEmail({ commission, merchant, projectUrl }) {
@@ -50,7 +40,7 @@ export async function sendEnquiryReceivedEmail({ commission, merchant, projectUr
     ctaLabel: "View your enquiry",
     ctaUrl: projectUrl,
   });
-  return send({ to: commission.customerEmail, subject: `We've received your enquiry`, html });
+  return send({ context: { shop: commission.shop || merchant?.shop, kind: "sendEnquiryReceivedEmail", resourceId: commission.id }, to: commission.customerEmail, subject: `We've received your enquiry`, html });
 }
 
 export async function sendProposalEmail({ commission, merchant, projectUrl }) {
@@ -63,7 +53,7 @@ export async function sendProposalEmail({ commission, merchant, projectUrl }) {
     ctaLabel: "Review your proposal",
     ctaUrl: projectUrl,
   });
-  return send({ to: commission.customerEmail, subject: `Your proposal is ready`, html });
+  return send({ context: { shop: commission.shop || merchant?.shop, kind: "sendProposalEmail", resourceId: commission.id }, to: commission.customerEmail, subject: `Your proposal is ready`, html });
 }
 
 export async function sendDepositLinkEmail({ commission, merchant, projectUrl }) {
@@ -74,7 +64,7 @@ export async function sendDepositLinkEmail({ commission, merchant, projectUrl })
     ctaLabel: "Pay your deposit",
     ctaUrl: projectUrl,
   });
-  return send({ to: commission.customerEmail, subject: `Ready for your deposit`, html });
+  return send({ context: { shop: commission.shop || merchant?.shop, kind: "sendDepositLinkEmail", resourceId: commission.id }, to: commission.customerEmail, subject: `Ready for your deposit`, html });
 }
 
 export async function sendProofReadyEmail({ commission, merchant, projectUrl }) {
@@ -85,7 +75,7 @@ export async function sendProofReadyEmail({ commission, merchant, projectUrl }) 
     ctaLabel: "Review the proof",
     ctaUrl: projectUrl,
   });
-  return send({ to: commission.customerEmail, subject: `A proof is ready for your review`, html });
+  return send({ context: { shop: commission.shop || merchant?.shop, kind: "sendProofReadyEmail", resourceId: commission.id }, to: commission.customerEmail, subject: `A proof is ready for your review`, html });
 }
 
 export async function sendStageUpdateEmail({ commission, merchant, projectUrl, note }) {
@@ -97,7 +87,7 @@ export async function sendStageUpdateEmail({ commission, merchant, projectUrl, n
     ctaLabel: "View progress",
     ctaUrl: projectUrl,
   });
-  return send({ to: commission.customerEmail, subject: `Update on your commission: ${label}`, html });
+  return send({ context: { shop: commission.shop || merchant?.shop, kind: "sendStageUpdateEmail", resourceId: commission.id }, to: commission.customerEmail, subject: `Update on your commission: ${label}`, html });
 }
 
 export async function sendChangeRequestResolvedEmail({ commission, merchant, projectUrl, accepted, additionalCharge }) {
@@ -108,7 +98,7 @@ export async function sendChangeRequestResolvedEmail({ commission, merchant, pro
     ctaLabel: "View commission",
     ctaUrl: projectUrl,
   });
-  return send({ to: commission.customerEmail, subject: accepted ? `Change request accepted` : `Change request declined`, html });
+  return send({ context: { shop: commission.shop || merchant?.shop, kind: "sendChangeRequestResolvedEmail", resourceId: commission.id }, to: commission.customerEmail, subject: accepted ? `Change request accepted` : `Change request declined`, html });
 }
 
 export async function sendLockedEmail({ commission, merchant, projectUrl }) {
@@ -119,5 +109,5 @@ export async function sendLockedEmail({ commission, merchant, projectUrl }) {
     ctaLabel: "View commission",
     ctaUrl: projectUrl,
   });
-  return send({ to: commission.customerEmail, subject: `Your specification is locked in`, html });
+  return send({ context: { shop: commission.shop || merchant?.shop, kind: "sendLockedEmail", resourceId: commission.id }, to: commission.customerEmail, subject: `Your specification is locked in`, html });
 }

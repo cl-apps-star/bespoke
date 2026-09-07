@@ -121,7 +121,7 @@ async function addUpdate(commissionId, { status, note, media, notifyCustomer = f
       note: note ?? null,
       media: media ? JSON.stringify(media) : null,
       visibleToCustomer: true,
-      customerNotified: notifyCustomer,
+      customerNotified: false,
     },
   });
 }

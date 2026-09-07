@@ -32,7 +32,8 @@ export const action = async ({ request }) => {
       engravingText: "Together always",
     });
     const projectUrl = `${appUrl}/bespoke/${commission.token}`;
-    await sendEnquiryReceivedEmail({ commission, merchant, projectUrl });
+    const emailResult = await sendEnquiryReceivedEmail({ commission, merchant, projectUrl });
+    if (emailResult.skipped) return { error: `The commission was saved, but email sending is unconfirmed: ${emailResult.reason}` };
     return { ok: true };
   }
 
@@ -67,6 +68,7 @@ export default function Index() {
 
   return (
     <s-page heading="Bespoke">
+      {fetcher.data?.error ? <s-banner tone="critical">{fetcher.data.error}</s-banner> : null}
       <s-button
         slot="primary-action"
         onClick={() => fetcher.submit({ intent: "create_test_enquiry" }, { method: "POST" })}
