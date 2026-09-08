@@ -47,7 +47,6 @@ function baseTemplate({ merchant, title, bodyHtml, ctaLabel, ctaUrl }) {
     <h1 style="font-size:20px;font-weight:normal;margin-bottom:16px;">${title}</h1>
     <div style="font-size:15px;line-height:1.6;color:#333;">${bodyHtml}</div>
     ${ctaUrl ? `<div style="margin-top:28px;"><a href="${ctaUrl}" style="display:inline-block;padding:12px 24px;background:${brand.accent};color:#fff;text-decoration:none;font-size:14px;">${ctaLabel || "View commission"}</a></div>` : ""}
-    ${ctaUrl ? `<div style="margin-top:12px;font-family:Arial,sans-serif;font-size:12px;color:#999;word-break:break-all;">${ctaUrl}</div>` : ""}
     <div style="margin-top:40px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#999;">${trustLine}</div>
   </div>`;
   const text = [
