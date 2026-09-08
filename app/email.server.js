@@ -10,6 +10,13 @@ import { stageLabel } from "./bespoke-stages";
 const FALLBACK_REPLY_TO = "hello@cl-apps.net";
 
 
+function serviceSenderName(value) {
+  const source = String(value || "CL Apps").replace(/[<>"\r\n]/g, "").trim() || "CL Apps";
+  if (source.toLowerCase() === "cl apps") return "CL Apps";
+  if (source.toLowerCase().includes(" via cl apps")) return source;
+  return `${source} via CL Apps`;
+}
+
 function brandBlock(merchant) {
   const name = merchant?.brandName || "Our studio";
   const accent = merchant?.accentColor || "#8a7758";
@@ -35,7 +42,7 @@ function trustLineFor(merchant) {
 
 function fromAddress(merchant) {
   const brand = brandBlock(merchant);
-  return `${brand.name} <commissions@cl-apps.net>`;
+  return `${serviceSenderName(brand.name)} <commissions@cl-apps.net>`;
 }
 
 function baseTemplate({ merchant, title, bodyHtml, ctaLabel, ctaUrl }) {
