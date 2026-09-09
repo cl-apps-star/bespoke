@@ -4,6 +4,7 @@ import { saveUploadedImages } from "../imageUpload.server";
 import { sendEnquiryReceivedEmail } from "../email.server";
 import { reserveCommissionSlot } from "../plan.server";
 import { isPaidPlan } from "../planLogic";
+import { publicOrigin } from "../publicOrigin.server";
 
 // Public, unauthenticated route — the entry point for the commission form
 // builder described in the Bespoke spec. A merchant links to
@@ -68,7 +69,7 @@ export const action = async ({ request, params }) => {
     referenceImages,
   });
 
-  const appUrl = process.env.SHOPIFY_APP_URL || "";
+  const appUrl = publicOrigin(request.url);
   const projectUrl = `${appUrl}/bespoke/${commission.token}`;
   await sendEnquiryReceivedEmail({ commission, merchant, projectUrl });
 

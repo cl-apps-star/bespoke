@@ -4,6 +4,7 @@ import { authenticate } from "../shopify.server";
 import { getOrCreateMerchantProfile, listCommissionsForMerchant, createEnquiry } from "../bespoke.server";
 import { stageLabel } from "../bespoke-stages";
 import { sendEnquiryReceivedEmail } from "../email.server";
+import { publicOrigin } from "../publicOrigin.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -17,7 +18,7 @@ export const action = async ({ request }) => {
   const merchant = await getOrCreateMerchantProfile(session.shop);
   const formData = await request.formData();
   const intent = formData.get("intent");
-  const appUrl = process.env.SHOPIFY_APP_URL || "";
+  const appUrl = publicOrigin(request.url);
 
   if (intent === "create_test_enquiry") {
     const commission = await createEnquiry(merchant.id, {

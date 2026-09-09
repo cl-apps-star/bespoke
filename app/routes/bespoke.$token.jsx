@@ -12,6 +12,7 @@ import { createPayableOrderForCommission } from "../bespoke-payment.server";
 import { STAGES, stageIndex, stageLabel, changeRequestTypeLabel } from "../bespoke-stages";
 import { sendDepositLinkEmail, sendStageUpdateEmail } from "../email.server";
 import { isPaidPlan } from "../planLogic";
+import { publicOrigin } from "../publicOrigin.server";
 
 // Public, unauthenticated route — the token is the access control, same
 // pattern as Care's /care/:token and In the Making's /journey/:token.
@@ -26,7 +27,7 @@ export const action = async ({ request, params }) => {
   if (!commission) throw new Response("Not found", { status: 404 });
   const formData = await request.formData();
   const intent = formData.get("intent");
-  const appUrl = process.env.SHOPIFY_APP_URL || "";
+  const appUrl = publicOrigin(request.url);
   const projectUrl = `${appUrl}/bespoke/${commission.token}`;
   const merchant = commission.merchant;
 

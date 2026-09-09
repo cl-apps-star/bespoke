@@ -45,6 +45,7 @@ import {
   sendChangeRequestResolvedEmail,
   sendLockedEmail,
 } from "../email.server";
+import { publicOrigin } from "../publicOrigin.server";
 
 export const loader = async ({ request, params }) => {
   const { session } = await authenticate.admin(request);
@@ -59,7 +60,7 @@ export const action = async ({ request, params }) => {
   const merchant = await getOrCreateMerchantProfile(session.shop);
   const formData = await request.formData();
   const intent = formData.get("intent");
-  const appUrl = process.env.SHOPIFY_APP_URL || "";
+  const appUrl = publicOrigin(request.url);
 
   const commission = await getCommissionById(params.id, merchant.id);
   if (!commission) throw new Response("Not found", { status: 404 });
