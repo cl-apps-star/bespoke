@@ -1,12 +1,8 @@
 import { sendTransactionalEmail } from "./emailProviders.server";
 import { stageLabel } from "./bespoke-stages";
 
-// Same domain / provider as the rest of the suite — keep sender addresses
-// distinct per app so replies route sensibly.
-// Reveal:        certificates@cl-apps.net
-// In the Making: updates@cl-apps.net
-// Care:          care@cl-apps.net
-// Bespoke:       commissions@cl-apps.net
+// Keep customer mail on the suite-wide transactional identity. Replies still
+// route to the merchant's support address (or the CL Apps fallback) below.
 const FALLBACK_REPLY_TO = "hello@cl-apps.net";
 
 
@@ -42,7 +38,7 @@ function trustLineFor(merchant) {
 
 function fromAddress(merchant) {
   const brand = brandBlock(merchant);
-  return `${serviceSenderName(brand.name)} <commissions@cl-apps.net>`;
+  return `${serviceSenderName(brand.name)} <updates@notify.cl-apps.net>`;
 }
 
 function baseTemplate({ merchant, title, bodyHtml, ctaLabel, ctaUrl }) {
